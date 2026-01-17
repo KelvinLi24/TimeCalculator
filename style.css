@@ -1,0 +1,171 @@
+:root {
+    --primary-color: #4a90e2;
+    --bg-color: #f4f7f6;
+    --card-bg: #ffffff;
+    --text-color: #333;
+    --border-radius: 12px;
+}
+
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background-color: --bg-color;
+    background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    margin: 0;
+    color: var(--text-color);
+}
+
+.calculator-card {
+    background: var(--card-bg);
+    padding: 2rem;
+    border-radius: var(--border-radius);
+    box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+    width: 100%;
+    max-width: 450px;
+}
+
+h1 {
+    text-align: center;
+    margin-bottom: 1.5rem;
+    font-size: 1.5rem;
+    color: var(--primary-color);
+}
+
+.section {
+    margin-bottom: 1.2rem;
+}
+
+label {
+    display: block;
+    margin-bottom: 0.5rem;
+    font-weight: 600;
+    font-size: 0.9rem;
+}
+
+/* 時間輸入框樣式 */
+input[type="datetime-local"] {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    font-size: 1rem;
+    box-sizing: border-box;
+}
+
+/* 加減按鈕樣式 */
+.radio-group {
+    display: flex;
+    gap: 1rem;
+}
+
+.radio-label {
+    flex: 1;
+    background: #f0f2f5;
+    padding: 10px;
+    border-radius: 8px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+    border: 2px solid transparent;
+}
+
+.radio-label:hover {
+    background: #e1e4e8;
+}
+
+.radio-label input {
+    margin-right: 8px;
+}
+
+/* 當 radio 被選中時的樣式 */
+.radio-label:has(input:checked) {
+    border-color: var(--primary-color);
+    background-color: #eef6ff;
+    color: var(--primary-color);
+}
+
+/* 時間間隔輸入框佈局 */
+.duration-inputs {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+}
+
+.input-wrapper {
+    position: relative;
+}
+
+.input-wrapper input {
+    width: 100%;
+    padding: 10px;
+    padding-right: 40px; /* 留位置給單位 */
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    box-sizing: border-box;
+    font-size: 1rem;
+}
+
+.input-wrapper span {
+    position: absolute;
+    right: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #888;
+    font-size: 0.85rem;
+    pointer-events: none;
+}
+
+/* 計算按鈕 */
+button#calcBtn {
+    width: 100%;
+    padding: 12px;
+    background-color: var(--primary-color);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: 1.1rem;
+    cursor: pointer;
+    transition: background 0.3s;
+    margin-top: 10px;
+}
+
+button#calcBtn:hover {
+    background-color: #357abd;
+}
+
+/* 結果顯示區 */
+.result-section {
+    margin-top: 2rem;
+    padding-top: 1.5rem;
+    border-top: 1px dashed #ccc;
+    text-align: center;
+    animation: fadeIn 0.5s ease;
+}
+
+.result-section h2 {
+    font-size: 1rem;
+    color: #666;
+    margin-bottom: 0.5rem;
+}
+
+.result-time {
+    font-size: 1.4rem;
+    font-weight: bold;
+    color: var(--primary-color);
+    margin-bottom: 5px;
+}
+
+.diff-info {
+    font-size: 0.9rem;
+    color: #888;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}

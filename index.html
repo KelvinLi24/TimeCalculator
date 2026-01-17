@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>時間加減計算器</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <div class="calculator-card">
+        <h1>⏳ 時間計算器</h1>
+        
+        <div class="section">
+            <label for="startTime">開始時間 (預設現在)</label>
+            <input type="datetime-local" id="startTime">
+        </div>
+
+        <div class="section operation-select">
+            <label>運算方式</label>
+            <div class="radio-group">
+                <label class="radio-label">
+                    <input type="radio" name="operation" value="add" checked> 
+                    <span class="icon">➕</span> 加上時間
+                </label>
+                <label class="radio-label">
+                    <input type="radio" name="operation" value="subtract"> 
+                    <span class="icon">➖</span> 減去時間
+                </label>
+            </div>
+        </div>
+
+        <div class="section duration-inputs">
+            <div class="input-wrapper">
+                <input type="number" id="days" min="0" placeholder="0">
+                <span>天</span>
+            </div>
+            <div class="input-wrapper">
+                <input type="number" id="hours" min="0" placeholder="0">
+                <span>小時</span>
+            </div>
+            <div class="input-wrapper">
+                <input type="number" id="minutes" min="0" placeholder="0">
+                <span>分</span>
+            </div>
+            <div class="input-wrapper">
+                <input type="number" id="seconds" min="0" placeholder="0">
+                <span>秒</span>
+            </div>
+        </div>
+
+        <button id="calcBtn">計算結果</button>
+
+        <div class="result-section" id="resultContainer" style="display: none;">
+            <h2>計算結果：</h2>
+            <div id="resultDate" class="result-time"></div>
+            <div id="timeDiffInfo" class="diff-info"></div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
