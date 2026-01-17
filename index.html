@@ -12,20 +12,20 @@
         <h1>⏳ 時間計算器</h1>
         
         <div class="section">
-            <label for="startTime">開始時間 (預設現在)</label>
-            <input type="datetime-local" id="startTime">
+            <label for="startTime">開始時間</label>
+            <input type="datetime-local" id="startTime" class="save-target">
         </div>
 
         <div class="section mode-select">
             <label>選擇計算模式</label>
             <div class="radio-group tabs">
                 <label class="radio-label active-tab">
-                    <input type="radio" name="calcMode" value="duration" checked> 
+                    <input type="radio" name="calcMode" value="duration" checked class="save-target"> 
                     <span>推算日期</span>
                     <small>(時間 加/減)</small>
                 </label>
                 <label class="radio-label">
-                    <input type="radio" name="calcMode" value="date"> 
+                    <input type="radio" name="calcMode" value="date" class="save-target"> 
                     <span>計算差距</span>
                     <small>(日期 ↔ 日期)</small>
                 </label>
@@ -39,11 +39,11 @@
                 <label>運算方式</label>
                 <div class="radio-group">
                     <label class="radio-label">
-                        <input type="radio" name="operation" value="add" checked> 
+                        <input type="radio" name="operation" value="add" checked class="save-target"> 
                         <span class="icon">➕</span> 加上
                     </label>
                     <label class="radio-label">
-                        <input type="radio" name="operation" value="subtract"> 
+                        <input type="radio" name="operation" value="subtract" class="save-target"> 
                         <span class="icon">➖</span> 減去
                     </label>
                 </div>
@@ -51,28 +51,31 @@
 
             <div class="section duration-inputs">
                 <div class="input-wrapper">
-                    <input type="number" id="days" min="0" placeholder="0"><span>天</span>
+                    <input type="number" id="days" min="0" placeholder="0" class="save-target"><span>天</span>
                 </div>
                 <div class="input-wrapper">
-                    <input type="number" id="hours" min="0" placeholder="0"><span>時</span>
+                    <input type="number" id="hours" min="0" placeholder="0" class="save-target"><span>時</span>
                 </div>
                 <div class="input-wrapper">
-                    <input type="number" id="minutes" min="0" placeholder="0"><span>分</span>
+                    <input type="number" id="minutes" min="0" placeholder="0" class="save-target"><span>分</span>
                 </div>
                 <div class="input-wrapper">
-                    <input type="number" id="seconds" min="0" placeholder="0"><span>秒</span>
+                    <input type="number" id="seconds" min="0" placeholder="0" class="save-target"><span>秒</span>
                 </div>
             </div>
         </div>
 
         <div id="modeDate" class="mode-content" style="display: none;">
             <div class="section">
-                <label for="targetTime">目標日期與時間 (預設現在)</label>
-                <input type="datetime-local" id="targetTime">
+                <label for="targetTime">目標日期與時間</label>
+                <input type="datetime-local" id="targetTime" class="save-target">
             </div>
         </div>
 
-        <button id="calcBtn">計算結果</button>
+        <div class="btn-group">
+            <button id="calcBtn" class="primary-btn">計算結果</button>
+            <button id="resetBtn" class="secondary-btn">重設</button>
+        </div>
 
         <div class="result-section" id="resultContainer" style="display: none;">
             <h2>計算結果：</h2>

@@ -3,44 +3,126 @@ document.addEventListener('DOMContentLoaded', () => {
     const startTimeInput = document.getElementById('startTime');
     const targetTimeInput = document.getElementById('targetTime');
     const calcBtn = document.getElementById('calcBtn');
+    const resetBtn = document.getElementById('resetBtn'); // 新增重設按鈕
     
     // 模式相關元素
     const modeRadios = document.querySelectorAll('input[name="calcMode"]');
     const modeDurationDiv = document.getElementById('modeDuration');
     const modeDateDiv = document.getElementById('modeDate');
 
+    // 需監聽的輸入欄位 (透過 class 選擇)
+    const saveTargets = document.querySelectorAll('.save-target');
+
     // 結果顯示元素
     const resultContainer = document.getElementById('resultContainer');
     const resultMainDiv = document.getElementById('resultMain');
     const resultSubDiv = document.getElementById('resultSub');
 
-    // 1. 初始化：將兩個時間輸入框都設為當前時間
-    setNow(startTimeInput);
-    setNow(targetTimeInput);
+    // --- 1. 初始化與讀取 LocalStorage ---
+    loadState();
+
+    function loadState() {
+        const savedData = localStorage.getItem('timeCalcState');
+        
+        if (savedData) {
+            const state = JSON.parse(savedData);
+            
+            // 回填數值
+            if(state.startTime) startTimeInput.value = state.startTime;
+            if(state.targetTime) targetTimeInput.value = state.targetTime;
+            
+            // 回填數字輸入框
+            ['days', 'hours', 'minutes', 'seconds'].forEach(id => {
+                if(state[id] !== undefined) document.getElementById(id).value = state[id];
+            });
+
+            // 回填 Radio (模式 & 加減)
+            if(state.calcMode) {
+                const radio = document.querySelector(`input[name="calcMode"][value="${state.calcMode}"]`);
+                if(radio) radio.checked = true;
+            }
+            if(state.operation) {
+                const radio = document.querySelector(`input[name="operation"][value="${state.operation}"]`);
+                if(radio) radio.checked = true;
+            }
+        } else {
+            // 無存檔時的預設值
+            setNow(startTimeInput);
+            setNow(targetTimeInput);
+        }
+
+        // 根據 Radio 狀態更新介面顯示
+        updateUIByMode();
+    }
+
+    // --- 2. 儲存狀態邏輯 ---
+    // 對所有輸入欄位綁定事件
+    saveTargets.forEach(el => {
+        el.addEventListener('input', saveState);
+        el.addEventListener('change', saveState);
+    });
+
+    function saveState() {
+        const state = {
+            startTime: startTimeInput.value,
+            targetTime: targetTimeInput.value,
+            calcMode: document.querySelector('input[name="calcMode"]:checked').value,
+            operation: document.querySelector('input[name="operation"]:checked').value,
+            days: document.getElementById('days').value,
+            hours: document.getElementById('hours').value,
+            minutes: document.getElementById('minutes').value,
+            seconds: document.getElementById('seconds').value
+        };
+        localStorage.setItem('timeCalcState', JSON.stringify(state));
+        
+        // 如果是模式切換，需要即時更新 UI
+        updateUIByMode();
+    }
+
+    // --- 3. 重設功能 ---
+    resetBtn.addEventListener('click', () => {
+        // 清除儲存
+        localStorage.removeItem('timeCalcState');
+        
+        // 介面歸零
+        setNow(startTimeInput);
+        setNow(targetTimeInput);
+        
+        // 清空數字欄位
+        ['days', 'hours', 'minutes', 'seconds'].forEach(id => {
+            document.getElementById(id).value = '';
+        });
+
+        // 恢復預設 Radio (推算模式 & 加上)
+        document.querySelector('input[name="calcMode"][value="duration"]').checked = true;
+        document.querySelector('input[name="operation"][value="add"]').checked = true;
+
+        // 隱藏結果並更新 UI
+        resultContainer.style.display = 'none';
+        updateUIByMode();
+    });
+
+    // --- 4. 輔助功能 ---
+
+    // 更新 UI 顯示 (根據模式)
+    function updateUIByMode() {
+        const currentMode = document.querySelector('input[name="calcMode"]:checked').value;
+        if (currentMode === 'duration') {
+            modeDurationDiv.style.display = 'block';
+            modeDateDiv.style.display = 'none';
+        } else {
+            modeDurationDiv.style.display = 'none';
+            modeDateDiv.style.display = 'block';
+        }
+    }
 
     function setNow(inputElement) {
         const now = new Date();
-        // 修正時區偏移以符合 datetime-local 格式
         now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
         inputElement.value = now.toISOString().slice(0, 16);
     }
 
-    // 2. 監聽模式切換
-    modeRadios.forEach(radio => {
-        radio.addEventListener('change', (e) => {
-            if (e.target.value === 'duration') {
-                modeDurationDiv.style.display = 'block';
-                modeDateDiv.style.display = 'none';
-            } else {
-                modeDurationDiv.style.display = 'none';
-                modeDateDiv.style.display = 'block';
-            }
-            // 切換模式時隱藏舊的結果
-            resultContainer.style.display = 'none';
-        });
-    });
-
-    // 3. 點擊計算按鈕
+    // --- 5. 計算邏輯 (保持不變) ---
     calcBtn.addEventListener('click', calculate);
 
     function calculate() {
@@ -48,7 +130,6 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!startStr) { alert("請設定開始時間"); return; }
         const startDate = new Date(startStr);
 
-        // 判斷當前模式
         const currentMode = document.querySelector('input[name="calcMode"]:checked').value;
 
         if (currentMode === 'duration') {
@@ -58,7 +139,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // 邏輯 A: 透過輸入的長度推算新日期
     function calculateByDuration(startDate) {
         const days = parseInt(document.getElementById('days').value) || 0;
         const hours = parseInt(document.getElementById('hours').value) || 0;
@@ -72,12 +152,11 @@ document.addEventListener('DOMContentLoaded', () => {
         const newDate = new Date(startDate.getTime() + (totalMs * multiplier));
 
         displayResult(
-            formatDate(newDate), // 主標題：新日期
-            `( 原始時間 ${operation === 'add' ? '+' : '-'} ${formatDuration(totalMs)} )` // 副標題
+            formatDate(newDate),
+            `( 原始時間 ${operation === 'add' ? '+' : '-'} ${formatDuration(totalMs)} )`
         );
     }
 
-    // 邏輯 B: 計算兩個日期的差距
     function calculateByDate(startDate) {
         const targetStr = targetTimeInput.value;
         if (!targetStr) { alert("請設定目標日期"); return; }
@@ -85,29 +164,23 @@ document.addEventListener('DOMContentLoaded', () => {
         const targetDate = new Date(targetStr);
         const diffMs = targetDate.getTime() - startDate.getTime();
         
-        // 判斷前後關係
         let prefix = "";
         if (diffMs > 0) prefix = "晚於開始時間：";
         else if (diffMs < 0) prefix = "早於開始時間：";
         else prefix = "時間相同";
 
-        // 轉換毫秒為可讀格式
-        const durationText = formatDuration(Math.abs(diffMs));
-
         displayResult(
-            durationText, // 主標題：相差多久
-            `( ${prefix} )` // 副標題
+            formatDuration(Math.abs(diffMs)),
+            `( ${prefix} )`
         );
     }
 
-    // 工具：顯示結果
     function displayResult(mainText, subText) {
         resultContainer.style.display = 'block';
         resultMainDiv.textContent = mainText;
         resultSubDiv.textContent = subText;
     }
 
-    // 工具：格式化日期 (YYYY/MM/DD HH:mm:ss)
     function formatDate(date) {
         return date.toLocaleString('zh-TW', {
             year: 'numeric', month: '2-digit', day: '2-digit',
@@ -116,10 +189,8 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // 工具：格式化時間長度 (毫秒 -> 天時分秒)
     function formatDuration(ms) {
         if (ms === 0) return "0秒";
-
         const seconds = Math.floor((ms / 1000) % 60);
         const minutes = Math.floor((ms / (1000 * 60)) % 60);
         const hours = Math.floor((ms / (1000 * 60 * 60)) % 24);
@@ -130,7 +201,6 @@ document.addEventListener('DOMContentLoaded', () => {
         if (hours > 0) str += `${hours}小時 `;
         if (minutes > 0) str += `${minutes}分 `;
         if (seconds > 0) str += `${seconds}秒`;
-        
         return str.trim();
     }
 });
