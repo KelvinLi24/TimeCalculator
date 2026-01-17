@@ -3,14 +3,14 @@ document.addEventListener('DOMContentLoaded', () => {
     const startTimeInput = document.getElementById('startTime');
     const targetTimeInput = document.getElementById('targetTime');
     const calcBtn = document.getElementById('calcBtn');
-    const resetBtn = document.getElementById('resetBtn'); // 新增重設按鈕
+    const resetBtn = document.getElementById('resetBtn'); 
     
     // 模式相關元素
     const modeRadios = document.querySelectorAll('input[name="calcMode"]');
     const modeDurationDiv = document.getElementById('modeDuration');
     const modeDateDiv = document.getElementById('modeDate');
 
-    // 需監聽的輸入欄位 (透過 class 選擇)
+    // 需監聽的輸入欄位
     const saveTargets = document.querySelectorAll('.save-target');
 
     // 結果顯示元素
@@ -27,16 +27,15 @@ document.addEventListener('DOMContentLoaded', () => {
         if (savedData) {
             const state = JSON.parse(savedData);
             
-            // 回填數值
+            // 回填時間與輸入
             if(state.startTime) startTimeInput.value = state.startTime;
             if(state.targetTime) targetTimeInput.value = state.targetTime;
             
-            // 回填數字輸入框
             ['days', 'hours', 'minutes', 'seconds'].forEach(id => {
                 if(state[id] !== undefined) document.getElementById(id).value = state[id];
             });
 
-            // 回填 Radio (模式 & 加減)
+            // 回填模式選單
             if(state.calcMode) {
                 const radio = document.querySelector(`input[name="calcMode"][value="${state.calcMode}"]`);
                 if(radio) radio.checked = true;
@@ -45,18 +44,24 @@ document.addEventListener('DOMContentLoaded', () => {
                 const radio = document.querySelector(`input[name="operation"][value="${state.operation}"]`);
                 if(radio) radio.checked = true;
             }
+
+            // ★ 新增：回填計算結果 (如果有存的話)
+            if (state.hasResult) {
+                resultContainer.style.display = 'block';
+                resultMainDiv.textContent = state.resultMain || '';
+                resultSubDiv.textContent = state.resultSub || '';
+            }
+
         } else {
             // 無存檔時的預設值
             setNow(startTimeInput);
             setNow(targetTimeInput);
         }
 
-        // 根據 Radio 狀態更新介面顯示
         updateUIByMode();
     }
 
-    // --- 2. 儲存狀態邏輯 ---
-    // 對所有輸入欄位綁定事件
+    // --- 2. 儲存狀態邏輯 (新增儲存結果) ---
     saveTargets.forEach(el => {
         el.addEventListener('input', saveState);
         el.addEventListener('change', saveState);
@@ -64,6 +69,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function saveState() {
         const state = {
+            // 輸入狀態
             startTime: startTimeInput.value,
             targetTime: targetTimeInput.value,
             calcMode: document.querySelector('input[name="calcMode"]:checked').value,
@@ -71,40 +77,42 @@ document.addEventListener('DOMContentLoaded', () => {
             days: document.getElementById('days').value,
             hours: document.getElementById('hours').value,
             minutes: document.getElementById('minutes').value,
-            seconds: document.getElementById('seconds').value
+            seconds: document.getElementById('seconds').value,
+            
+            // ★ 新增：結果狀態 (即使重整頁面，結果也會留著)
+            hasResult: resultContainer.style.display === 'block',
+            resultMain: resultMainDiv.textContent,
+            resultSub: resultSubDiv.textContent
         };
         localStorage.setItem('timeCalcState', JSON.stringify(state));
         
-        // 如果是模式切換，需要即時更新 UI
         updateUIByMode();
     }
 
-    // --- 3. 重設功能 ---
+    // --- 3. 重設功能 (修改後) ---
     resetBtn.addEventListener('click', () => {
-        // 清除儲存
-        localStorage.removeItem('timeCalcState');
-        
-        // 介面歸零
+        // A. 介面輸入歸零 (回到預設值)
         setNow(startTimeInput);
         setNow(targetTimeInput);
         
-        // 清空數字欄位
         ['days', 'hours', 'minutes', 'seconds'].forEach(id => {
             document.getElementById(id).value = '';
         });
 
-        // 恢復預設 Radio (推算模式 & 加上)
+        // 恢復預設 Radio
         document.querySelector('input[name="calcMode"][value="duration"]').checked = true;
         document.querySelector('input[name="operation"][value="add"]').checked = true;
 
-        // 隱藏結果並更新 UI
-        resultContainer.style.display = 'none';
+        // B. ★ 關鍵修改：不隱藏結果區塊，也不清除 LocalStorage 的結果
+        // resultContainer.style.display = 'none';  <-- 這行被刪除了
+
+        // C. 更新 UI 並立即存檔 (這樣 LocalStorage 會變成「乾淨的輸入」+「舊的結果」)
         updateUIByMode();
+        saveState(); 
     });
 
-    // --- 4. 輔助功能 ---
+    // --- 4. 輔助與計算邏輯 ---
 
-    // 更新 UI 顯示 (根據模式)
     function updateUIByMode() {
         const currentMode = document.querySelector('input[name="calcMode"]:checked').value;
         if (currentMode === 'duration') {
@@ -122,7 +130,6 @@ document.addEventListener('DOMContentLoaded', () => {
         inputElement.value = now.toISOString().slice(0, 16);
     }
 
-    // --- 5. 計算邏輯 (保持不變) ---
     calcBtn.addEventListener('click', calculate);
 
     function calculate() {
@@ -137,6 +144,9 @@ document.addEventListener('DOMContentLoaded', () => {
         } else {
             calculateByDate(startDate);
         }
+        
+        // 計算完畢後立即存檔，確保結果被記錄
+        saveState();
     }
 
     function calculateByDuration(startDate) {
