@@ -17,6 +17,12 @@ document.addEventListener('DOMContentLoaded', () => {
     const resultContainer = document.getElementById('resultContainer');
     const resultMainDiv = document.getElementById('resultMain');
     const resultSubDiv = document.getElementById('resultSub');
+    
+    // 倒數計時相關元素
+    const timerLabel = document.getElementById('timerLabel');
+    const liveTimerDiv = document.getElementById('liveTimer');
+    let timerInterval = null; // 用來存放計時器的變數
+    let currentTargetTimestamp = null; // 用來存放目前正在倒數的目標時間
 
     // --- 1. 初始化與讀取 LocalStorage ---
     loadState();
@@ -45,11 +51,16 @@ document.addEventListener('DOMContentLoaded', () => {
                 if(radio) radio.checked = true;
             }
 
-            // 回填計算結果 (如果有存且狀態是顯示的)
+            // 回填計算結果與重啟倒數
             if (state.hasResult) {
                 resultContainer.style.display = 'block';
                 resultMainDiv.textContent = state.resultMain || '';
                 resultSubDiv.textContent = state.resultSub || '';
+                
+                // ★ 重點：如果有儲存目標時間戳記，就重啟倒數
+                if (state.targetTimestamp) {
+                    startLiveTimer(state.targetTimestamp);
+                }
             } else {
                 resultContainer.style.display = 'none';
             }
@@ -81,17 +92,18 @@ document.addEventListener('DOMContentLoaded', () => {
             minutes: document.getElementById('minutes').value,
             seconds: document.getElementById('seconds').value,
             
-            // 結果狀態 (紀錄是否正在顯示)
+            // 結果狀態
             hasResult: resultContainer.style.display === 'block',
             resultMain: resultMainDiv.textContent,
-            resultSub: resultSubDiv.textContent
+            resultSub: resultSubDiv.textContent,
+            targetTimestamp: currentTargetTimestamp // ★ 儲存倒數目標
         };
         localStorage.setItem('timeCalcState', JSON.stringify(state));
         
         updateUIByMode();
     }
 
-    // --- 3. 重設功能 (修正版：徹底清除) ---
+    // --- 3. 重設功能 ---
     resetBtn.addEventListener('click', () => {
         // A. 介面輸入歸零
         setNow(startTimeInput);
@@ -105,35 +117,18 @@ document.addEventListener('DOMContentLoaded', () => {
         document.querySelector('input[name="calcMode"][value="duration"]').checked = true;
         document.querySelector('input[name="operation"][value="add"]').checked = true;
 
-        // B. ★ 修正重點：隱藏結果區塊
+        // B. 隱藏結果並停止計時
         resultContainer.style.display = 'none';
         resultMainDiv.textContent = '';
         resultSubDiv.textContent = '';
+        stopLiveTimer(); // ★ 停止計時
 
-        // C. 更新 UI 並立即存檔 (這會把 "hasResult: false" 寫入 LocalStorage)
+        // C. 更新與存檔
         updateUIByMode();
         saveState(); 
     });
 
-    // --- 4. 輔助與計算邏輯 ---
-
-    function updateUIByMode() {
-        const currentMode = document.querySelector('input[name="calcMode"]:checked').value;
-        if (currentMode === 'duration') {
-            modeDurationDiv.style.display = 'block';
-            modeDateDiv.style.display = 'none';
-        } else {
-            modeDurationDiv.style.display = 'none';
-            modeDateDiv.style.display = 'block';
-        }
-    }
-
-    function setNow(inputElement) {
-        const now = new Date();
-        now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
-        inputElement.value = now.toISOString().slice(0, 16);
-    }
-
+    // --- 4. 核心計算邏輯 ---
     calcBtn.addEventListener('click', calculate);
 
     function calculate() {
@@ -142,15 +137,20 @@ document.addEventListener('DOMContentLoaded', () => {
         const startDate = new Date(startStr);
 
         const currentMode = document.querySelector('input[name="calcMode"]:checked').value;
+        
+        let calculatedDate = null; // 這將是我們倒數的目標
 
         if (currentMode === 'duration') {
-            calculateByDuration(startDate);
+            calculatedDate = calculateByDuration(startDate);
         } else {
-            calculateByDate(startDate);
+            calculatedDate = calculateByDate(startDate);
         }
         
-        // 計算完畢後立即存檔
-        saveState();
+        // ★ 啟動倒數計時器
+        if (calculatedDate) {
+            startLiveTimer(calculatedDate.getTime());
+            saveState(); // 計算完畢後存檔
+        }
     }
 
     function calculateByDuration(startDate) {
@@ -169,11 +169,13 @@ document.addEventListener('DOMContentLoaded', () => {
             formatDate(newDate),
             `( 原始時間 ${operation === 'add' ? '+' : '-'} ${formatDuration(totalMs)} )`
         );
+        
+        return newDate; // 回傳目標日期供計時器使用
     }
 
     function calculateByDate(startDate) {
         const targetStr = targetTimeInput.value;
-        if (!targetStr) { alert("請設定目標日期"); return; }
+        if (!targetStr) { alert("請設定目標日期"); return null; }
         
         const targetDate = new Date(targetStr);
         const diffMs = targetDate.getTime() - startDate.getTime();
@@ -187,6 +189,81 @@ document.addEventListener('DOMContentLoaded', () => {
             formatDuration(Math.abs(diffMs)),
             `( ${prefix} )`
         );
+        
+        // 在這個模式下，用戶輸入的第二個日期就是我們的倒數目標
+        return targetDate; 
+    }
+
+    // --- 5. ★ 實時倒數計時器邏輯 ---
+    function startLiveTimer(timestamp) {
+        // 先停止舊的計時器
+        stopLiveTimer();
+        
+        currentTargetTimestamp = timestamp; // 記錄當前目標
+        const targetDate = new Date(timestamp);
+
+        // 立即執行一次，避免等待一秒
+        updateTimerDisplay();
+
+        // 設定每秒執行
+        timerInterval = setInterval(updateTimerDisplay, 1000);
+
+        function updateTimerDisplay() {
+            const now = new Date();
+            const diff = targetDate.getTime() - now.getTime();
+            
+            // 判斷是「還有多久」還是「已過多久」
+            if (diff >= 0) {
+                timerLabel.textContent = "⏳ 距離目標還有";
+                timerLabel.style.color = "#4a90e2"; // 藍色
+                liveTimerDiv.textContent = formatDetailedDuration(diff);
+            } else {
+                timerLabel.textContent = "⚠️ 目標已過去";
+                timerLabel.style.color = "#e74c3c"; // 紅色警示
+                liveTimerDiv.textContent = formatDetailedDuration(Math.abs(diff));
+            }
+        }
+    }
+
+    function stopLiveTimer() {
+        if (timerInterval) {
+            clearInterval(timerInterval);
+            timerInterval = null;
+        }
+        currentTargetTimestamp = null;
+        liveTimerDiv.textContent = "--";
+    }
+
+    // 詳細格式化 (用於即時倒數：天 時 分 秒)
+    function formatDetailedDuration(ms) {
+        const seconds = Math.floor((ms / 1000) % 60);
+        const minutes = Math.floor((ms / (1000 * 60)) % 60);
+        const hours = Math.floor((ms / (1000 * 60 * 60)) % 24);
+        const days = Math.floor(ms / (1000 * 60 * 60 * 24));
+
+        // 補零函數
+        const pad = (num) => num.toString().padStart(2, '0');
+        
+        return `${days}天 ${pad(hours)}時 ${pad(minutes)}分 ${pad(seconds)}秒`;
+    }
+
+
+    // --- 6. 輔助函數 ---
+    function updateUIByMode() {
+        const currentMode = document.querySelector('input[name="calcMode"]:checked').value;
+        if (currentMode === 'duration') {
+            modeDurationDiv.style.display = 'block';
+            modeDateDiv.style.display = 'none';
+        } else {
+            modeDurationDiv.style.display = 'none';
+            modeDateDiv.style.display = 'block';
+        }
+    }
+
+    function setNow(inputElement) {
+        const now = new Date();
+        now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
+        inputElement.value = now.toISOString().slice(0, 16);
     }
 
     function displayResult(mainText, subText) {
@@ -203,6 +280,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
+    // 簡略格式化 (用於靜態結果)
     function formatDuration(ms) {
         if (ms === 0) return "0秒";
         const seconds = Math.floor((ms / 1000) % 60);

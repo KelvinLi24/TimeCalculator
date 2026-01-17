@@ -62,7 +62,6 @@ input[type="datetime-local"] {
     font-family: inherit;
 }
 
-/* Tabs & Radio Group */
 .radio-group {
     display: flex;
     gap: 10px;
@@ -108,7 +107,6 @@ input[type="datetime-local"] {
     color: #6ba6e6;
 }
 
-/* Inputs grid */
 .duration-inputs {
     display: grid;
     grid-template-columns: 1fr 1fr 1fr 1fr;
@@ -140,7 +138,6 @@ input[type="datetime-local"] {
     pointer-events: none;
 }
 
-/* 按鈕群組 */
 .btn-group {
     display: flex;
     gap: 12px;
@@ -158,7 +155,7 @@ button {
 }
 
 .primary-btn {
-    flex: 2; /* 讓計算按鈕寬一點 */
+    flex: 2;
     background-color: var(--primary-color);
     color: white;
 }
@@ -178,7 +175,6 @@ button {
     color: #333;
 }
 
-/* 結果顯示區 */
 .result-section {
     margin-top: 2rem;
     padding: 1.5rem;
@@ -205,6 +201,31 @@ button {
 .result-sub {
     font-size: 0.95rem;
     color: #666;
+    margin-bottom: 1.5rem; /* 與下方倒數區塊拉開距離 */
+}
+
+/* --- 新增：倒數計時器樣式 --- */
+.timer-box {
+    background-color: #fff;
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    padding: 12px;
+    margin-top: 15px;
+}
+
+.timer-label {
+    font-size: 0.85rem;
+    color: #888;
+    margin-bottom: 5px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.timer-display {
+    font-family: 'Courier New', Courier, monospace; /* 等寬字體更有時鐘感 */
+    font-size: 1.2rem;
+    font-weight: bold;
+    color: #333;
 }
 
 @keyframes fadeIn {
