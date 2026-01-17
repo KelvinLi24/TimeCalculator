@@ -1,91 +1,136 @@
 document.addEventListener('DOMContentLoaded', () => {
+    // 元素選取
     const startTimeInput = document.getElementById('startTime');
+    const targetTimeInput = document.getElementById('targetTime');
     const calcBtn = document.getElementById('calcBtn');
+    
+    // 模式相關元素
+    const modeRadios = document.querySelectorAll('input[name="calcMode"]');
+    const modeDurationDiv = document.getElementById('modeDuration');
+    const modeDateDiv = document.getElementById('modeDate');
+
+    // 結果顯示元素
     const resultContainer = document.getElementById('resultContainer');
-    const resultDateDiv = document.getElementById('resultDate');
-    const timeDiffInfoDiv = document.getElementById('timeDiffInfo');
+    const resultMainDiv = document.getElementById('resultMain');
+    const resultSubDiv = document.getElementById('resultSub');
 
-    // 1. 初始化：將輸入框設為當前時間
-    setNow();
+    // 1. 初始化：將兩個時間輸入框都設為當前時間
+    setNow(startTimeInput);
+    setNow(targetTimeInput);
 
-    function setNow() {
+    function setNow(inputElement) {
         const now = new Date();
-        // datetime-local 需要 ISO 格式 (YYYY-MM-DDThh:mm)，且需要考慮時區偏移
+        // 修正時區偏移以符合 datetime-local 格式
         now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
-        startTimeInput.value = now.toISOString().slice(0, 16);
+        inputElement.value = now.toISOString().slice(0, 16);
     }
 
-    // 2. 監聽計算按鈕點擊
-    calcBtn.addEventListener('click', calculateTime);
+    // 2. 監聽模式切換
+    modeRadios.forEach(radio => {
+        radio.addEventListener('change', (e) => {
+            if (e.target.value === 'duration') {
+                modeDurationDiv.style.display = 'block';
+                modeDateDiv.style.display = 'none';
+            } else {
+                modeDurationDiv.style.display = 'none';
+                modeDateDiv.style.display = 'block';
+            }
+            // 切換模式時隱藏舊的結果
+            resultContainer.style.display = 'none';
+        });
+    });
 
-    function calculateTime() {
-        // 取得開始時間
-        const baseTimeStr = startTimeInput.value;
-        if (!baseTimeStr) {
-            alert("請選擇開始時間！");
-            return;
+    // 3. 點擊計算按鈕
+    calcBtn.addEventListener('click', calculate);
+
+    function calculate() {
+        const startStr = startTimeInput.value;
+        if (!startStr) { alert("請設定開始時間"); return; }
+        const startDate = new Date(startStr);
+
+        // 判斷當前模式
+        const currentMode = document.querySelector('input[name="calcMode"]:checked').value;
+
+        if (currentMode === 'duration') {
+            calculateByDuration(startDate);
+        } else {
+            calculateByDate(startDate);
         }
+    }
 
-        const baseDate = new Date(baseTimeStr);
-
-        // 取得輸入的天/時/分/秒 (若為空則預設為 0)
+    // 邏輯 A: 透過輸入的長度推算新日期
+    function calculateByDuration(startDate) {
         const days = parseInt(document.getElementById('days').value) || 0;
         const hours = parseInt(document.getElementById('hours').value) || 0;
         const minutes = parseInt(document.getElementById('minutes').value) || 0;
         const seconds = parseInt(document.getElementById('seconds').value) || 0;
 
-        // 取得運算符號 (add 或 subtract)
         const operation = document.querySelector('input[name="operation"]:checked').value;
         const multiplier = operation === 'add' ? 1 : -1;
 
-        // 3. 計算邏輯
-        // 將所有輸入轉換為總毫秒數，直接對 Date 物件操作
-        // 1天 = 24時, 1時 = 60分, 1分 = 60秒, 1秒 = 1000毫秒
-        const totalMillisecondsToAdd = (
-            (days * 24 * 60 * 60 * 1000) +
-            (hours * 60 * 60 * 1000) +
-            (minutes * 60 * 1000) +
-            (seconds * 1000)
-        ) * multiplier;
+        const totalMs = ((days * 86400) + (hours * 3600) + (minutes * 60) + seconds) * 1000;
+        const newDate = new Date(startDate.getTime() + (totalMs * multiplier));
 
-        // 產生新的日期物件
-        const newDate = new Date(baseDate.getTime() + totalMillisecondsToAdd);
-
-        // 4. 顯示結果
-        displayResult(newDate, operation, { days, hours, minutes, seconds });
+        displayResult(
+            formatDate(newDate), // 主標題：新日期
+            `( 原始時間 ${operation === 'add' ? '+' : '-'} ${formatDuration(totalMs)} )` // 副標題
+        );
     }
 
-    function displayResult(dateObj, op, inputs) {
-        // 格式化日期時間顯示 (當地格式)
-        const options = { 
-            year: 'numeric', 
-            month: 'long', 
-            day: 'numeric', 
-            hour: '2-digit', 
-            minute: '2-digit', 
-            second: '2-digit',
-            hour12: false // 使用 24 小時制
-        };
+    // 邏輯 B: 計算兩個日期的差距
+    function calculateByDate(startDate) {
+        const targetStr = targetTimeInput.value;
+        if (!targetStr) { alert("請設定目標日期"); return; }
         
-        const formattedDate = dateObj.toLocaleString('zh-TW', options);
+        const targetDate = new Date(targetStr);
+        const diffMs = targetDate.getTime() - startDate.getTime();
         
-        // 顯示
+        // 判斷前後關係
+        let prefix = "";
+        if (diffMs > 0) prefix = "晚於開始時間：";
+        else if (diffMs < 0) prefix = "早於開始時間：";
+        else prefix = "時間相同";
+
+        // 轉換毫秒為可讀格式
+        const durationText = formatDuration(Math.abs(diffMs));
+
+        displayResult(
+            durationText, // 主標題：相差多久
+            `( ${prefix} )` // 副標題
+        );
+    }
+
+    // 工具：顯示結果
+    function displayResult(mainText, subText) {
         resultContainer.style.display = 'block';
-        resultDateDiv.textContent = formattedDate;
+        resultMainDiv.textContent = mainText;
+        resultSubDiv.textContent = subText;
+    }
 
-        // 組合提示文字 (例如: + 2天 3小時)
-        const symbol = op === 'add' ? '+' : '-';
-        let infoText = `${symbol} `;
-        if (inputs.days > 0) infoText += `${inputs.days}天 `;
-        if (inputs.hours > 0) infoText += `${inputs.hours}小時 `;
-        if (inputs.minutes > 0) infoText += `${inputs.minutes}分 `;
-        if (inputs.seconds > 0) infoText += `${inputs.seconds}秒`;
+    // 工具：格式化日期 (YYYY/MM/DD HH:mm:ss)
+    function formatDate(date) {
+        return date.toLocaleString('zh-TW', {
+            year: 'numeric', month: '2-digit', day: '2-digit',
+            hour: '2-digit', minute: '2-digit', second: '2-digit',
+            hour12: false
+        });
+    }
+
+    // 工具：格式化時間長度 (毫秒 -> 天時分秒)
+    function formatDuration(ms) {
+        if (ms === 0) return "0秒";
+
+        const seconds = Math.floor((ms / 1000) % 60);
+        const minutes = Math.floor((ms / (1000 * 60)) % 60);
+        const hours = Math.floor((ms / (1000 * 60 * 60)) % 24);
+        const days = Math.floor(ms / (1000 * 60 * 60 * 24));
+
+        let str = "";
+        if (days > 0) str += `${days}天 `;
+        if (hours > 0) str += `${hours}小時 `;
+        if (minutes > 0) str += `${minutes}分 `;
+        if (seconds > 0) str += `${seconds}秒`;
         
-        // 如果什麼都沒輸入
-        if (inputs.days === 0 && inputs.hours === 0 && inputs.minutes === 0 && inputs.seconds === 0) {
-            infoText = "時間未變動";
-        }
-
-        timeDiffInfoDiv.textContent = `( 原始時間 ${infoText} )`;
+        return str.trim();
     }
 });

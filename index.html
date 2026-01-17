@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>時間加減計算器</title>
+    <title>多功能時間計算器</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -16,36 +16,59 @@
             <input type="datetime-local" id="startTime">
         </div>
 
-        <div class="section operation-select">
-            <label>運算方式</label>
-            <div class="radio-group">
-                <label class="radio-label">
-                    <input type="radio" name="operation" value="add" checked> 
-                    <span class="icon">➕</span> 加上時間
+        <div class="section mode-select">
+            <label>選擇計算模式</label>
+            <div class="radio-group tabs">
+                <label class="radio-label active-tab">
+                    <input type="radio" name="calcMode" value="duration" checked> 
+                    <span>推算日期</span>
+                    <small>(時間 加/減)</small>
                 </label>
                 <label class="radio-label">
-                    <input type="radio" name="operation" value="subtract"> 
-                    <span class="icon">➖</span> 減去時間
+                    <input type="radio" name="calcMode" value="date"> 
+                    <span>計算差距</span>
+                    <small>(日期 ↔ 日期)</small>
                 </label>
             </div>
         </div>
 
-        <div class="section duration-inputs">
-            <div class="input-wrapper">
-                <input type="number" id="days" min="0" placeholder="0">
-                <span>天</span>
+        <hr class="divider">
+
+        <div id="modeDuration" class="mode-content">
+            <div class="section operation-select">
+                <label>運算方式</label>
+                <div class="radio-group">
+                    <label class="radio-label">
+                        <input type="radio" name="operation" value="add" checked> 
+                        <span class="icon">➕</span> 加上
+                    </label>
+                    <label class="radio-label">
+                        <input type="radio" name="operation" value="subtract"> 
+                        <span class="icon">➖</span> 減去
+                    </label>
+                </div>
             </div>
-            <div class="input-wrapper">
-                <input type="number" id="hours" min="0" placeholder="0">
-                <span>小時</span>
+
+            <div class="section duration-inputs">
+                <div class="input-wrapper">
+                    <input type="number" id="days" min="0" placeholder="0"><span>天</span>
+                </div>
+                <div class="input-wrapper">
+                    <input type="number" id="hours" min="0" placeholder="0"><span>時</span>
+                </div>
+                <div class="input-wrapper">
+                    <input type="number" id="minutes" min="0" placeholder="0"><span>分</span>
+                </div>
+                <div class="input-wrapper">
+                    <input type="number" id="seconds" min="0" placeholder="0"><span>秒</span>
+                </div>
             </div>
-            <div class="input-wrapper">
-                <input type="number" id="minutes" min="0" placeholder="0">
-                <span>分</span>
-            </div>
-            <div class="input-wrapper">
-                <input type="number" id="seconds" min="0" placeholder="0">
-                <span>秒</span>
+        </div>
+
+        <div id="modeDate" class="mode-content" style="display: none;">
+            <div class="section">
+                <label for="targetTime">目標日期與時間 (預設現在)</label>
+                <input type="datetime-local" id="targetTime">
             </div>
         </div>
 
@@ -53,8 +76,8 @@
 
         <div class="result-section" id="resultContainer" style="display: none;">
             <h2>計算結果：</h2>
-            <div id="resultDate" class="result-time"></div>
-            <div id="timeDiffInfo" class="diff-info"></div>
+            <div id="resultMain" class="result-main"></div>
+            <div id="resultSub" class="result-sub"></div>
         </div>
     </div>
 
