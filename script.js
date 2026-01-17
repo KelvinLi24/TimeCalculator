@@ -45,11 +45,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 if(radio) radio.checked = true;
             }
 
-            // ★ 新增：回填計算結果 (如果有存的話)
+            // 回填計算結果 (如果有存且狀態是顯示的)
             if (state.hasResult) {
                 resultContainer.style.display = 'block';
                 resultMainDiv.textContent = state.resultMain || '';
                 resultSubDiv.textContent = state.resultSub || '';
+            } else {
+                resultContainer.style.display = 'none';
             }
 
         } else {
@@ -61,7 +63,7 @@ document.addEventListener('DOMContentLoaded', () => {
         updateUIByMode();
     }
 
-    // --- 2. 儲存狀態邏輯 (新增儲存結果) ---
+    // --- 2. 儲存狀態邏輯 ---
     saveTargets.forEach(el => {
         el.addEventListener('input', saveState);
         el.addEventListener('change', saveState);
@@ -79,7 +81,7 @@ document.addEventListener('DOMContentLoaded', () => {
             minutes: document.getElementById('minutes').value,
             seconds: document.getElementById('seconds').value,
             
-            // ★ 新增：結果狀態 (即使重整頁面，結果也會留著)
+            // 結果狀態 (紀錄是否正在顯示)
             hasResult: resultContainer.style.display === 'block',
             resultMain: resultMainDiv.textContent,
             resultSub: resultSubDiv.textContent
@@ -89,9 +91,9 @@ document.addEventListener('DOMContentLoaded', () => {
         updateUIByMode();
     }
 
-    // --- 3. 重設功能 (修改後) ---
+    // --- 3. 重設功能 (修正版：徹底清除) ---
     resetBtn.addEventListener('click', () => {
-        // A. 介面輸入歸零 (回到預設值)
+        // A. 介面輸入歸零
         setNow(startTimeInput);
         setNow(targetTimeInput);
         
@@ -103,10 +105,12 @@ document.addEventListener('DOMContentLoaded', () => {
         document.querySelector('input[name="calcMode"][value="duration"]').checked = true;
         document.querySelector('input[name="operation"][value="add"]').checked = true;
 
-        // B. ★ 關鍵修改：不隱藏結果區塊，也不清除 LocalStorage 的結果
-        // resultContainer.style.display = 'none';  <-- 這行被刪除了
+        // B. ★ 修正重點：隱藏結果區塊
+        resultContainer.style.display = 'none';
+        resultMainDiv.textContent = '';
+        resultSubDiv.textContent = '';
 
-        // C. 更新 UI 並立即存檔 (這樣 LocalStorage 會變成「乾淨的輸入」+「舊的結果」)
+        // C. 更新 UI 並立即存檔 (這會把 "hasResult: false" 寫入 LocalStorage)
         updateUIByMode();
         saveState(); 
     });
@@ -145,7 +149,7 @@ document.addEventListener('DOMContentLoaded', () => {
             calculateByDate(startDate);
         }
         
-        // 計算完畢後立即存檔，確保結果被記錄
+        // 計算完畢後立即存檔
         saveState();
     }
 
